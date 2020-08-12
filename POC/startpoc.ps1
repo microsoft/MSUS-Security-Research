@@ -2,7 +2,7 @@ $root = if ($root -eq $null) { "https://raw.githubusercontent.com/microsoft/MSUS
 $failures = 0
 $workspace_name = if ($workspace_name -eq $null) { (read-host "POC Name") + "-" + [GUID]::NewGuid().Guid.substring(0,4) } else { $workspace_name }
 $resourceGroup_name = if ($resourceGroup_name -eq $null) { "$workspace_name-rg" } else { $resourceGroup_name }
-$poc_result = az deployment sub create --template-uri "$root/startpoc.json" --location eastus --parameters workspace_name=$workspace_name,resourceGroup_name=$resourceGroup_name,root=$root
+$poc_result = az deployment sub create --template-uri "$root/startpoc.json" --location eastus --parameters workspace_name=$workspace_name resourceGroup_name=$resourceGroup_name root=$root
 $poc_result_state = ($poc_result | convertfrom-json).properties.provisioningState
  if($poc_result2_state -eq "Succeeded"){write-host "Logic App deployment $poc_result_state"}else{write-host "--Logic App deployment $poc_result_state"; $failures++}
 $poc_result2 = az deployment sub create --template-uri "$root/roleassignment.json" --parameters workspace_name=$workspace_name --location eastus
