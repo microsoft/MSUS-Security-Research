@@ -119,7 +119,7 @@
                                                             "Content-type": "application/json"
                                                         },
                                                         "method": "PUT",
-                                                        "uri": "https://management.azure.com/subscriptions/@{variables('Subscription')}/resourceGroups/@{variables('rg')}/providers/Microsoft.OperationalInsights/workspaces/@{variables('workspace_name')}/datasources/@{variables('Subscription')}?api-version=2020-03-01-preview"
+                                                        "uri": "https://management.azure.com/subscriptions/@{variables('Subscription')}/resourceGroups/@{variables('resourceGroup_name')}/providers/Microsoft.OperationalInsights/workspaces/@{variables('workspace_name')}/datasources/@{variables('Subscription')}?api-version=2020-03-01-preview"
                                                     }
                                                 }
                                             }
