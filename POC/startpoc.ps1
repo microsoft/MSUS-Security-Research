@@ -16,7 +16,7 @@ $user = az ad user create --user-principal-name $u --password $p --dis
 $user_state = ($user | convertfrom-json).userPrincipalName
 $currentUserId = az ad signed-in-user show --query objectId
  if($user_state){write-host "Virtual SOC analyst $user_state Created";}else{write-host "--Virtual SOC analyst Failed"; $failures++}
-$poc_result3 = az deployment group create --template-uri "$root/kvdeploy.json" --parameters workspace_name=$workspace_name userId=$currentUserId --resource-group "$resourceGroup_name"
+$poc_result3 = az deployment group create --template-uri "$root/kvdeploy.json" --parameters workspace_name=$workspace_name resourceGroup_name=$resourceGroup_name userId=$currentUserId --resource-group "$resourceGroup_name"
 $poc_result3_state = ($poc_result3 | convertfrom-json).properties.provisioningState
  if($poc_result3_state -eq "Succeeded"){write-host "Key Vault deployment $poc_result3_state"}else{write-host "--Key Vault deployment $poc_result3_state"; $failures++}
 $kvs = az keyvault secret set --vault-name "$workspace_name-kv" --name "$workspace_name-vsoc" --value $p
