@@ -1,6 +1,6 @@
-$root = if ($root -eq $null) { "https://github.com/microsoft/MSUS-Security-Research/blob/main/POC" } else { $root }
+$root = if ($root -eq $null) { "https://raw.githubusercontent.com/microsoft/MSUS-Security-Research/main/POC" } else { $root }
 $failures = 0
-$workspace_name = if ($workspace_name -eq $null) { read-host "POC Name" + "-" + [GUID]::NewGuid().Guid.substring(0,4) } else { $workspace_name }
+$workspace_name = if ($workspace_name -eq $null) { (read-host "POC Name") + "-" + [GUID]::NewGuid().Guid.substring(0,4) } else { $workspace_name }
 $resourceGroup_name = if ($resourceGroup_name -eq $null) { "$workspace_name-rg" } else { $resourceGroup_name }
 $poc_result = az deployment sub create --template-uri "$root/startpoc.json" --location eastus --parameters workspace_name=$workspace_name,resourceGroup_name=$resourceGroup_name,root=$root
 $poc_result_state = ($poc_result | convertfrom-json).properties.provisioningState
