@@ -1,0 +1,331 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+        "parameters": {
+        "workspace_name": {
+            "defaultValue": "sentinel-workspace",
+                "type": "String"
+        },
+	"resourceGroup_name": {
+		"defaultValue": null,
+		"type": "String"
+	},
+	"root": {
+		"defaultValue": null,
+		"type": "String"
+	}
+    },
+    "variables": {
+        "ws": "[parameters('workspace_name')]",
+	"rg": "[coalesce(parameters('resourceGroup_name'),concat(parameters('workspace_name'),'-rg'))]",
+	"root": "[parameters('root')]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Logic/workflows",
+            "apiVersion": "2017-07-01",
+            "name": "[concat('la-deploy-',variables('ws'))]",
+            "location": "eastus",
+            "identity": {
+                "type": "SystemAssigned"
+            },
+            "properties": {
+                "state": "Enabled",
+                "definition": {
+                    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {},
+                    "triggers": {
+                        "request": {
+                            "type": "Request",
+                            "kind": "Http",
+                            "inputs": {
+                                "method": "GET",
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "actions": {
+                        "Condition": {
+                            "actions": {
+                                "Completed_Dashboard": {
+                                    "runAfter": {},
+                                    "type": "Response",
+                                    "kind": "Http",
+                                    "inputs": {
+                                        "body": "<!doctype html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1, shrink-to-fit=no\">\n</head>\n<body>\n<div class=\"container-fluid\">\n<br/>\n@{variables('dashboard_body')}\n<h4 class=\"text-center\">@{triggerOutputs()['queries']?['deploy']} deployment started</h4></div>\n</body>\n</html>",
+                                        "headers": {
+                                            "Content-type": "text/html"
+                                        },
+                                        "statusCode": 200
+                                    }
+                                }
+                            },
+                            "runAfter": {
+                                "Has_Queries": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "else": {
+                                "actions": {
+                                    "Dashboard": {
+                                        "runAfter": {},
+                                        "type": "Response",
+                                        "kind": "Http",
+                                        "inputs": {
+                                            "body": "<!doctype html>\n<html>\n<head><meta charset=\"utf-8\"></head>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1, shrink-to-fit=no\">\n<body>\n<div class=\"container-fluid\">\n@{variables('dashboard_body')}\n</div>\n</body>\n</html>",
+                                            "headers": {
+                                                "Content-type": "text/html"
+                                            },
+                                            "statusCode": 200
+                                        }
+                                    }
+                                }
+                            },
+                            "expression": {
+                                "and": [
+                                    {
+                                        "equals": [
+                                            "@variables('deployment')",
+                                            true
+                                        ]
+                                    }
+                                ]
+                            },
+                            "type": "If"
+                        },
+                        "Has_Queries": {
+                            "actions": {
+                                "Switch": {
+                                    "runAfter": {},
+                                    "cases": {
+                                        "AzureActivity": {
+                                            "case": "azureactivity",
+                                            "actions": {
+                                                "ConnectAzureActivity": {
+                                                    "runAfter": {},
+                                                    "type": "Http",
+                                                    "inputs": {
+                                                        "authentication": {
+                                                            "type": "ManagedServiceIdentity"
+                                                        },
+                                                        "body": {
+                                                            "kind": "AzureActivityLog",
+                                                            "properties": {
+                                                                "linkedResourceId": "/subscriptions/@{variables('Subscription')}/providers/microsoft.insights/eventtypes/management"
+                                                            }
+                                                        },
+                                                        "headers": {
+                                                            "Content-type": "application/json"
+                                                        },
+                                                        "method": "PUT",
+                                                        "uri": "https://management.azure.com/subscriptions/@{variables('Subscription')}/resourceGroups/@{variables('rg')}/providers/Microsoft.OperationalInsights/workspaces/@{variables('workspace_name')}/datasources/@{variables('Subscription')}?api-version=2020-03-01-preview"
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "Sentinel": {
+                                            "case": "sentinel",
+                                            "actions": {
+                                                "DeploySentinel": {
+                                                    "runAfter": {},
+                                                    "type": "Http",
+                                                    "inputs": {
+                                                        "authentication": {
+                                                            "type": "ManagedServiceIdentity"
+                                                        },
+                                                        "body": {
+                                                            "properties": {
+                                                                "mode": "Incremental",
+                                                                "parameters": {
+                                                                    "workspace_name": {
+                                                                        "value": "@{variables('workspace_name')}"
+                                                                    }
+                                                                },
+                                                                "templateLink": {
+                                                                    "uri": "[concat(variables('root'),'/workspacedeploy.json')]"
+                                                                }
+                                                            }
+                                                        },
+                                                        "headers": {
+                                                            "Content-type": "application/json"
+                                                        },
+                                                        "method": "PUT",
+                                                        "uri": "https://management.azure.com/subscriptions/@{variables('Subscription')}/resourcegroups/@{variables('resourceGroup_name')}/providers/Microsoft.Resources/deployments/@{guid()}?api-version=2019-10-01"
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "SocMod": {
+                                            "case": "socmod",
+                                            "actions": {
+                                                "DeploySocMod": {
+                                                    "runAfter": {},
+                                                    "type": "Http",
+                                                    "inputs": {
+                                                        "authentication": {
+                                                            "type": "ManagedServiceIdentity"
+                                                        },
+                                                        "body": {
+                                                            "properties": {
+                                                                "mode": "Incremental",
+                                                                "parameters": {
+                                                                    "workspace_name": {
+                                                                        "value": "@{variables('workspace_name')}"
+                                                                    }
+                                                                },
+                                                                "templateLink": {
+                                                                    "uri": "[concat(variables('root'),'/SocMod.json')]"
+                                                                }
+                                                            }
+                                                        },
+                                                        "headers": {
+                                                            "Content-type": "application/json"
+                                                        },
+                                                        "method": "PUT",
+                                                        "uri": "https://management.azure.com/subscriptions/@{variables('Subscription')}/resourcegroups/@{variables('resourceGroup_name')}/providers/Microsoft.Resources/deployments/@{guid()}?api-version=2019-10-01"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "default": {
+                                        "actions": {
+                                            "Set_variable": {
+                                                "runAfter": {},
+                                                "type": "SetVariable",
+                                                "inputs": {
+                                                    "name": "deployment",
+                                                    "value": false
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "expression": "@triggerOutputs()?['queries']?['deploy']",
+                                    "type": "Switch"
+                                }
+                            },
+                            "runAfter": {
+                                "Initialize_dashboard_body": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "else": {
+                                "actions": {
+                                    "No_deployment": {
+                                        "runAfter": {},
+                                        "type": "SetVariable",
+                                        "inputs": {
+                                            "name": "deployment",
+                                            "value": false
+                                        }
+                                    }
+                                }
+                            },
+                            "expression": {
+                                "and": [
+                                    {
+                                        "equals": [
+                                            "@not(equals(triggerOutputs()?['queries'],null))",
+                                            true
+                                        ]
+                                    }
+                                ]
+                            },
+                            "type": "If"
+                        },
+                        "Initialize_dashboard_body": {
+                            "runAfter": {
+                                "Initialize_deployment": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "InitializeVariable",
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "dashboard_body",
+                                        "type": "string",
+                                        "value": "<link href=\"https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css\" rel=\"stylesheet\" integrity=\"sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk\" crossorigin=\"anonymous\">\n<script src=\"https://code.jquery.com/jquery-3.5.1.slim.min.js\" integrity=\"sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj\" crossorigin=\"anonymous\"></script>\n<script src=\"https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js\" integrity=\"sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo\" crossorigin=\"anonymous\"></script>\n<script src=\"https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js\" integrity=\"sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI\" crossorigin=\"anonymous\"></script>\n<div class=\"container-lg\">\n    <div class=\"row p-1 text-center\">\n<div class=\"col-sm bg-info shadow p-3 m-2 rounded\"><b style=\"font-size:large;color:white;\">Full SOC Modernization Deployment</b><br><br>\n<input type=\"button\" value=\"Deploy SOC Modernization\" onclick=\"nav1()\" class=\"btn btn-light\"></div>\n<div class=\"col-sm bg-info shadow p-3 m-2 rounded\"><b style=\"font-size:large;color:white;\">Standalone Deployment</b><br><br>\n<input type=\"button\" value=\"Deploy Sentinel\" onclick=\"nav0()\" class=\"btn btn-light\"><br><br><input type=\"button\" value=\"Connect Azure Activity\" onclick=\"nav2()\" class=\"btn btn-light\"><br><br><input type=\"button\" value=\"Deploy SOC Workbooks\" onclick=\"nav1()\" class=\"btn btn-light\">\n</div>\n</div>\n</div>\n<script type=\"text/javascript\">\nvar rep=/&deploy=.*/g;\nfunction nav0()\n{\n  window.location.href = window.location.href.replace(rep, \"\") + '&deploy=sentinel';\n} \nfunction nav1()\n{\n  window.location.href = window.location.href.replace(rep, \"\") + '&deploy=socmod';\n} \nfunction nav2()\n{\n  window.location.href = window.location.href.replace(rep, \"\") + '&deploy=azureactivity';\n} \n</script>"
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_deployment": {
+                            "runAfter": {
+                                "Initialize_variable": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "InitializeVariable",
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "deployment",
+                                        "type": "boolean",
+                                        "value": true
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_variable": {
+                            "runAfter": {
+                                "Initialize_workspace": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "InitializeVariable",
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "Subscription",
+                                        "type": "string",
+                                        "value": "[subscription().subscriptionId]"
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_workspace": {
+                            "runAfter": {
+                                "Initialize_resourceGroup": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "InitializeVariable",
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "workspace_name",
+                                        "type": "string",
+                                        "value": "[variables('ws')]"
+                                    }
+                                ]
+                            }
+                        },
+			"Initialize_resourceGroup": {
+                            "runAfter": {},
+                            "type": "InitializeVariable",
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "resourceGroup_name",
+                                        "type": "string",
+                                        "value": "[variables('rg')]"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "outputs": {}
+                },
+                "parameters": {}
+            }
+        }
+    ],
+        "outputs": {
+        "principalId": {
+            "type": "string",
+                "value": "[reference(resourceId('Microsoft.Logic/workflows', concat('la-deploy-',variables('ws'))),'2017-07-01','Full').identity.principalId]"
+        }
+    }
+}

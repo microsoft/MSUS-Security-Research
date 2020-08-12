@@ -1,0 +1,53 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"workspace_name": {
+			"defaultValue": "sentinel-workspace",
+			"type": "String"
+		},
+                "resourceGroup_name": {
+			"defaultValue": null,
+			"type": "String"
+		},
+                "root": {
+			"defaultValue": null,
+			"type": "String"
+		}
+	},
+	"variables": {
+		"ws": "[parameters('workspace_name')]",
+		"rg": "[coalesce(parameters('resourceGroup_name'),concat(variables('ws'),'-rg'))]"
+		"root": "[parameters('root')]"
+	},
+	"resources": [{
+			"type": "Microsoft.Resources/resourceGroups",
+			"apiVersion": "2018-05-01",
+			"location": "eastus",
+			"name": "[variables('rg')]",
+			"properties": {}
+		},
+		{
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2017-05-10",
+			"name": "[concat('laDeployment-',variables('ws'))]",
+			"resourceGroup": "[variables('rg')]",
+			"dependsOn": [
+				"[resourceId('Microsoft.Resources/resourceGroups/', variables('rg'))]"
+			],
+			"properties": {
+				"mode": "Incremental",
+				"templateLink": {
+					"uri": "[concat(variables('root'),'/ladeploy.json')]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": { 
+					"workspace_name": { "value": "[variables('ws')]" },
+					"resourceGroup_name": { "value": "[variables('rg')]" },
+					"root": { "value": "[variables('root')]" },
+				}
+
+			}
+		}
+	]
+}

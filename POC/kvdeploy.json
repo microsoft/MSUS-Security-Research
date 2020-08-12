@@ -1,0 +1,112 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"workspace_name": {
+			"defaultValue": "sentinel-workspace",
+			"type": "String"
+		},
+		"resourceGroup_name": {
+			"defaultValue": null,
+			"type": "String"
+		},
+		"userId": {
+			"defaultValue": "user",
+			"type": "String"
+		},
+		"name": {
+			"defaultValue": "[concat(parameters('workspace_name'),'-kv')]",
+			"type": "String"
+		},
+		"location": {
+			"defaultValue": "eastus",
+			"type": "String"
+		},
+		"sku": {
+			"defaultValue": "Standard",
+			"type": "String"
+		},
+		"enabledForDeployment": {
+			"defaultValue": false,
+			"type": "Bool"
+		},
+		"enabledForTemplateDeployment": {
+			"defaultValue": false,
+			"type": "Bool"
+		},
+		"enabledForDiskEncryption": {
+			"defaultValue": false,
+			"type": "Bool"
+		},
+		"enableRbacAuthorization": {
+			"defaultValue": false,
+			"type": "Bool"
+		},
+		"enableSoftDelete": {
+			"defaultValue": true,
+			"type": "Bool"
+		},
+		"softDeleteRetentionInDays": {
+			"defaultValue": 90,
+			"type": "Int"
+		},
+		"networkAcls": {
+			"defaultValue": {
+				"defaultAction": "allow",
+				"bypass": "AzureServices",
+				"ipRules": [],
+				"virtualNetworkRules": []
+			},
+			"type": "Object"
+		}
+	},
+		"variables": {
+			"ws": "[parameters('workspace_name')]",
+			"rg": "[coalesce(parameters('resourceGroup_name'),variables('rg'))]"
+		},
+		"resources": [
+			{
+				"type": "Microsoft.KeyVault/vaults",
+				"apiVersion": "2018-02-14",
+				"name": "[parameters('name')]",
+				"location": "[parameters('location')]",
+				"dependsOn": [],
+				"tags": {},
+				"properties": {
+					"enabledForDeployment": "[parameters('enabledForDeployment')]",
+					"enabledForTemplateDeployment": "[parameters('enabledForTemplateDeployment')]",
+					"enabledForDiskEncryption": "[parameters('enabledForDiskEncryption')]",
+					"enableRbacAuthorization": "[parameters('enableRbacAuthorization')]",
+					"sku": {
+                    "name": "Standard",
+                    "family": "A"
+					},
+					"tenantId": "[subscription().tenantId]",
+					"accessPolicies":[
+					{
+						"objectId": "[parameters('userId')]",
+						"tenantId": "[subscription().tenantId]",
+						"permissions": {
+							"secrets": [
+								"Get",
+								"Set"
+							]
+						}
+					},
+					{
+						"objectId": "[reference(resourceId(subscription().subscriptionId,variables('rg'),'Microsoft.Logic/workflows', concat('la-deploy-',variables('ws'))),'2017-07-01','Full').identity.principalId]",
+						"tenantId": "[subscription().tenantId]",
+						"permissions": {
+							"secrets": [
+								"Get",
+								"Set"
+							]
+						}
+					}
+					]
+				}
+			}
+		],
+		"outputs": {
+		}
+	}

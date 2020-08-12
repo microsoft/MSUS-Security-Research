@@ -1,0 +1,33 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"workspace_name": {
+			"defaultValue": "sentinel-workspace",
+			"type": "String"
+		},
+		"resourceGroup_name": {
+			"defaultValue": null,
+			"type": "String"
+		}
+	},
+	"variables": {
+		"ws": "[parameters('workspace_name')]",
+		"rg": "[coalesce(parameters('resourceGroup_name'),concat(parameters('workspace_name'),'-rg'))]",
+		"Reader": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'acdd72a7-3385-48ef-bd42-f606fba81ae7')]",
+		"Contributor": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'b24988ac-6180-42a0-ab88-20f7382dd24c')]"
+	},
+	"resources": [
+		{
+			"type": "Microsoft.Authorization/roleAssignments",
+			"apiVersion": "2018-09-01-preview",
+			"name": "[guid(concat(variables('ws'),'2'))]",
+			"properties": {
+				"roleDefinitionId": "[variables('Contributor')]",
+				"principalId": "[reference(concat('/subscriptions/',subscription().subscriptionId,'/resourceGroups/',variables('rg'),'/providers/Microsoft.Logic/workflows/',concat('la-deploy-',variables('ws'))),'2017-07-01','Full').identity.principalId]",
+				"scope": "[subscription().Id]"
+			},
+			"dependsOn": []
+		}
+	]
+}

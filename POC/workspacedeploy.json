@@ -1,0 +1,63 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"workspace_name": {
+			"defaultValue": "sentinel-workspace",
+			"type": "String"
+		}
+	},
+	"variables": {
+		"ws":"[parameters('workspace_name')]",
+		"ws_type": "microsoft.operationalinsights/workspaces"
+	},
+	"resources": [{
+            "type": "microsoft.operationalinsights/workspaces",
+            "apiVersion": "2020-03-01-preview",
+            "name": "[variables('ws')]",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "sku": {
+                    "name": "pergb2018"
+                },
+                "retentionInDays": 90,
+                "publicNetworkAccessForIngestion": "Enabled",
+                "publicNetworkAccessForQuery": "Enabled"
+            }
+        },
+        {
+            "type": "Microsoft.OperationsManagement/solutions",
+            "apiVersion": "2015-11-01-preview",
+            "name": "[concat(concat('SecurityInsights(',variables('ws')),')')]",
+            "location": "[resourceGroup().location]",
+            "plan": {
+                "name": "[concat(concat('SecurityInsights(',variables('ws')),')')]",
+                "promotionCode": "",
+                "product": "OMSGallery/SecurityInsights",
+                "publisher": "Microsoft"
+            },
+            "properties": {
+                "workspaceResourceId": "[resourceId(variables('ws_type'),variables('ws'))]",
+                "containedResources": []
+            },
+            "dependsOn": [ "[variables('ws')]" ]
+        },
+        {
+            "type": "Microsoft.OperationsManagement/solutions",
+            "apiVersion": "2015-11-01-preview",
+            "name": "[concat(concat('Office365(',variables('ws')),')')]",
+            "location": "[resourceGroup().location]",
+            "plan": {
+                "name": "[concat(concat('Office365(',variables('ws')),')')]",
+                "promotionCode": "",
+                "product": "OMSGallery/Office365",
+                "publisher": "Microsoft"
+            },
+            "properties": {
+                "workspaceResourceId": "[resourceId(variables('ws_type'),variables('ws'))]",
+                "containedResources": []
+            },
+            "dependsOn": [ "[variables('ws')]" ]
+        }],
+	"outputs": {}
+}
