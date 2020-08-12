@@ -62,7 +62,7 @@
 	},
 		"variables": {
 			"ws": "[parameters('workspace_name')]",
-			"rg": "[coalesce(parameters('resourceGroup_name'),variables('rg'))]"
+			"rg": "[coalesce(parameters('resourceGroup_name'),concat(parameters('workspace_name'),'-rg'))]"
 		},
 		"resources": [
 			{
