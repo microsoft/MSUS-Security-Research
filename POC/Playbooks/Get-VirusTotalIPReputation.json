@@ -17,8 +17,8 @@
         }
     },
     "variables": {
-        "AzureLogAnalyticsDataCollectorConnectionName": "[concat('azureloganalyticsdatacollector-', parameters('PlaybookName'))]",
-        "AzureSentinelConnectionName": "[concat('azuresentinel-', parameters('PlaybookName'))]"
+        "AzureLogAnalyticsDataCollectorConnectionName": "azureloganalyticsdatacollector",
+        "AzureSentinelConnectionName": "azuresentinel"
         
     },
     "resources": [
