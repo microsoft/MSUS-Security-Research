@@ -1,10 +1,6 @@
 {
     "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
         "contentVersion": "1.0.0.0",
-	    "metadata":{
-            "comments": "This playbook will autoinvestigate MCAS FailedLogin Alerts to reduce True Positive Benign signals",
-            "author": "Steve Faehl"
-    	},
             "parameters": {
         "workflows_MCAS_Failed_Login_AutoInvestigate_name": {
             "defaultValue": "MCAS_Failed_Login_AutoInvestigate",
@@ -264,12 +260,12 @@
                             "azuremonitorlogs": {
                                 "connectionId": "[parameters('connections_azuremonitorlogs_externalid')]",
                                 "connectionName": "azuremonitorlogs",
-                                "id": "/subscriptions/6108e499-ed0d-4d24-bf85-cb6882f1b533/providers/Microsoft.Web/locations/eastus/managedApis/azuremonitorlogs"
+                                "id": "[concat('/subscriptions/',subscription().subscriptionId,'/providers/Microsoft.Web/locations/',resourceGroup().location,'/managedApis/azuremonitorlogs')]"
                             },
                             "azuresentinel": {
                                 "connectionId": "[parameters('connections_azuresentinel_externalid')]",
                                 "connectionName": "azuresentinel",
-                                "id": "/subscriptions/6108e499-ed0d-4d24-bf85-cb6882f1b533/providers/Microsoft.Web/locations/eastus/managedApis/azuresentinel"
+                                "id": "[concat('/subscriptions/',subscription().subscriptionId,'/providers/Microsoft.Web/locations/',resourceGroup().location,'/managedApis/azuresentinel')]"
                             }
                         }
                     }
