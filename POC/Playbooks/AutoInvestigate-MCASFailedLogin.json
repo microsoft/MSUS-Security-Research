@@ -47,7 +47,7 @@
             "type": "Microsoft.Logic/workflows",
             "apiVersion": "2017-07-01",
             "name": "[parameters('workflows_MCAS_Failed_Login_AutoInvestigate_name')]",
-            "location": "eastus",
+            "location": "[resourceGroup().location]",
             "dependsOn": ["azuresentinel", "azuremonitorlogs"],
             "properties": {
                 "state": "Enabled",
